@@ -74,6 +74,7 @@ namespace My_Game
 	void begin_Play(unsigned int current_time)
 	{
 		Font::set_Screen_Size(&World::text, 16, 16);
+		init_Maze(&World::maze);
 
 	}
 
@@ -98,8 +99,6 @@ namespace My_Game
 
 		SDL_RenderClear(Engine::renderer);
 
-		World::camera.world_coord.x = World::current_maze_position.x-World::camera.world_coord.w / 2;
-		World::camera.world_coord.y = World::current_maze_position.y - World::camera.world_coord.h / 2;
 		Grid_Camera::calibrate(&World::camera);
 
 		Tileset::draw_Grid(&World::tileset, &World::camera, &World::maze, Engine::renderer);
@@ -111,12 +110,48 @@ namespace My_Game
 
 	void init_Maze(Grid::Grid *g)
 	{
-		
+		for (int i = 0; i < g->n_cols*g->n_rows; i++) g->data[i] = 1;
 	}
 
 	int next_Maze_Step(Grid::Point *current_pos, Grid::Grid *g, int &done)
 	{
-		
+		int dir = rand() % 4;
+		if (dir == 1 && current_pos->y-2>=0)
+		{
+			if (g->data[(current_pos->y - 2)*current_pos->x]==1)
+			{
+				g->data[(current_pos->y - 2)*current_pos->x] = 2;
+				g->data[(current_pos->y - 1)*current_pos->x] = 2;
+				return 1;
+			}
+		}
+		if (dir == 2 && current_pos->y + 2 < g->n_rows)
+		{
+			if (g->data[(current_pos->y + 2)*current_pos->x] == 1)
+			{
+				g->data[(current_pos->y + 2)*current_pos->x] = 2;
+				g->data[(current_pos->y + 1)*current_pos->x] = 2;
+				return 2;
+			}
+		}
+		if (dir == 3 && current_pos->x - 2 >= 0)
+		{
+			if (g->data[(current_pos->x - 2)*current_pos->y] == 1)
+			{
+				g->data[(current_pos->x - 2)*current_pos->y] = 2;
+				g->data[(current_pos->x - 1)*current_pos->y] = 2;
+				return 3;
+			}
+		}
+		if (dir == 4 && current_pos->x + 2 < g->n_cols)
+		{
+			if (g->data[(current_pos->x + 2)*current_pos->y] == 1)
+			{
+				g->data[(current_pos->x + 2)*current_pos->y] = 2;
+				g->data[(current_pos->x + 1)*current_pos->y] = 2;
+				return 4;
+			}
+		}
 		return 0;
 	}
 }
