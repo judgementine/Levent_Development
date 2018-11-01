@@ -134,5 +134,8 @@
     <ClInclude Include="include\Spawn_Stack_core.h">
       <Filter>Header Files\include</Filter>
     </ClInclude>
+    <ClInclude Include="Stack.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

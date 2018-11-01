@@ -6,6 +6,8 @@
 #include "include/Light_core.h"
 #include "include/Actor_core.h"
 #include "include/Particle_core.h"
+#include <time.h>
+#include "Stack.h"
 
 namespace My_Game
 {
@@ -45,11 +47,13 @@ namespace My_Game
 
 		Grid::Grid maze;
 
-		Grid::Point current_maze_position = {0, 0};
+		Grid::Point current_maze_position = {1, 1};
 
 		Grid_Camera::Grid_Camera camera;
 		
 		unsigned int last_step_time = 0;
+
+		Stacking::Stacking PrevPositions;
 
 	}
 
@@ -68,13 +72,17 @@ namespace My_Game
 		World::camera.world_coord.y = 0;
 		World::camera.world_coord.w = World::Parameters::maze_n_cols;
 		World::camera.world_coord.h = World::Parameters::maze_n_rows;
+		Stacking::init(&World::PrevPositions, World::maze.n_cols*World::maze.n_rows);
+
 
 	}
 
 	void begin_Play(unsigned int current_time)
 	{
+		srand(time(NULL));
 		Font::set_Screen_Size(&World::text, 16, 16);
 		init_Maze(&World::maze);
+		World::maze.data[World::current_maze_position.y*World::maze.n_cols+World::current_maze_position.x] = 2;
 
 	}
 
@@ -86,10 +94,16 @@ namespace My_Game
 
 		if (current_time - World::last_step_time >= World::Parameters::step_frequency)
 		{
+			
 			World::last_step_time = current_time;
 			int done = 0;
 			int dir = next_Maze_Step(&World::current_maze_position, &World::maze, done);
-
+			if (done == 1)
+			{
+				init_Maze(&World::maze);
+				World::maze.data[World::current_maze_position.y*World::maze.n_cols + World::current_maze_position.x] = 2;
+			}
+			
 		}
 
 	}
@@ -115,43 +129,73 @@ namespace My_Game
 
 	int next_Maze_Step(Grid::Point *current_pos, Grid::Grid *g, int &done)
 	{
-		int dir = rand() % 4;
-		if (dir == 1 && current_pos->y-2>=0)
+		int count = 0;
+		int *direction= new int[4];
+		if (current_pos->y-2>=0 && g->data[(current_pos->y - 2)*g->n_cols+current_pos->x]==1)
 		{
-			if (g->data[(current_pos->y - 2)*current_pos->x]==1)
-			{
-				g->data[(current_pos->y - 2)*current_pos->x] = 2;
-				g->data[(current_pos->y - 1)*current_pos->x] = 2;
-				return 1;
-			}
+			direction[count] = 1;
+			count++;
+
 		}
-		if (dir == 2 && current_pos->y + 2 < g->n_rows)
+		if (current_pos->y + 2 < g->n_rows && g->data[(current_pos->y + 2)*g->n_cols+current_pos->x] == 1)
 		{
-			if (g->data[(current_pos->y + 2)*current_pos->x] == 1)
-			{
-				g->data[(current_pos->y + 2)*current_pos->x] = 2;
-				g->data[(current_pos->y + 1)*current_pos->x] = 2;
-				return 2;
-			}
+			direction[count] = 2;
+			count++;
 		}
-		if (dir == 3 && current_pos->x - 2 >= 0)
+		if (current_pos->x - 2 >= 0 && g->data[(current_pos->x - 2)+(g->n_cols*current_pos->y)] == 1)
 		{
-			if (g->data[(current_pos->x - 2)*current_pos->y] == 1)
-			{
-				g->data[(current_pos->x - 2)*current_pos->y] = 2;
-				g->data[(current_pos->x - 1)*current_pos->y] = 2;
-				return 3;
-			}
+			direction[count] = 3;
+			count++;
 		}
-		if (dir == 4 && current_pos->x + 2 < g->n_cols)
+		if (current_pos->x + 2 < g->n_cols && g->data[(current_pos->x + 2)+(g->n_cols*current_pos->y)] == 1)
 		{
-			if (g->data[(current_pos->x + 2)*current_pos->y] == 1)
-			{
-				g->data[(current_pos->x + 2)*current_pos->y] = 2;
-				g->data[(current_pos->x + 1)*current_pos->y] = 2;
-				return 4;
-			}
+			direction[count] = 4;
+			count++;
+			
 		}
-		return 0;
+		if (count == 0)
+		{
+			if (World::PrevPositions.n_data<=0)
+			{
+				done = 1;
+				return 0;
+			}
+			int prev = Stacking::Pop(&World::PrevPositions);
+			current_pos->x = prev % g->n_cols;
+			current_pos->y = (prev - current_pos->x) / g->n_cols;
+			 
+			return next_Maze_Step(current_pos, g, done);
+		}
+		int dir = rand() % (count);
+		if (direction[dir] == 1)
+		{
+			World::maze.data[(World::current_maze_position.y - 2)*World::maze.n_cols + World::current_maze_position.x] = 2;
+			World::maze.data[(World::current_maze_position.y - 1)*World::maze.n_cols + World::current_maze_position.x] = 2;
+			Stacking::Push(&World::PrevPositions, World::current_maze_position.y*World::maze.n_cols + World::current_maze_position.x);
+			World::current_maze_position.y = World::current_maze_position.y - 2;
+		}
+		if (direction[dir] == 2)
+		{
+			World::maze.data[(World::current_maze_position.y + 2)*World::maze.n_cols + World::current_maze_position.x] = 2;
+			World::maze.data[(World::current_maze_position.y + 1)*World::maze.n_cols + World::current_maze_position.x] = 2;
+			Stacking::Push(&World::PrevPositions, World::current_maze_position.y*World::maze.n_cols + World::current_maze_position.x);
+			World::current_maze_position.y = World::current_maze_position.y + 2;
+
+		}
+		if (direction[dir] == 3)
+		{
+			World::maze.data[World::current_maze_position.y * World::maze.n_cols + World::current_maze_position.x - 2] = 2;
+			World::maze.data[World::current_maze_position.y * World::maze.n_cols + World::current_maze_position.x - 1] = 2;
+			Stacking::Push(&World::PrevPositions, World::current_maze_position.y * World::maze.n_cols + World::current_maze_position.x);
+			World::current_maze_position.x = World::current_maze_position.x - 2;
+		}
+		if (direction[dir] == 4)
+		{
+			World::maze.data[World::current_maze_position.y * World::maze.n_cols + World::current_maze_position.x + 2] = 2;
+			World::maze.data[World::current_maze_position.y * World::maze.n_cols + World::current_maze_position.x + 1] = 2;
+			Stacking::Push(&World::PrevPositions, World::current_maze_position.y * World::maze.n_cols + World::current_maze_position.x);
+			World::current_maze_position.x = World::current_maze_position.x + 2;
+		}
+		return direction[dir];
 	}
 }

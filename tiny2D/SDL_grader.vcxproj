@@ -155,6 +155,7 @@
     <ClInclude Include="include\Vec_core.h" />
     <ClInclude Include="include\Vec_data.h" />
     <ClInclude Include="My_Game.h" />
+    <ClInclude Include="Stack.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
