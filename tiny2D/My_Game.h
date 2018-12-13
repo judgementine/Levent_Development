@@ -155,6 +155,9 @@ namespace My_Game
 		}
 		if (count == 0)
 		{
+			World::maze.data[current_pos->y * World::maze.n_cols + current_pos->x] = 3;
+			int tmpX = current_pos->x;
+			int tmpY = current_pos->y;
 			if (World::PrevPositions.n_data<=0)
 			{
 				done = 1;
@@ -163,8 +166,13 @@ namespace My_Game
 			int prev = Stacking::Pop(&World::PrevPositions);
 			current_pos->x = prev % g->n_cols;
 			current_pos->y = (prev - current_pos->x) / g->n_cols;
+			int diffX = (current_pos->x - tmpX) / 2;
+			int diffY = (current_pos->y - tmpY) / 2;
+			World::maze.data[(current_pos->y - diffY) * World::maze.n_cols + current_pos->x - diffX] = 3;
+			return 1;
+
+
 			 
-			return next_Maze_Step(current_pos, g, done);
 		}
 		int dir = rand() % (count);
 		if (direction[dir] == 1)
